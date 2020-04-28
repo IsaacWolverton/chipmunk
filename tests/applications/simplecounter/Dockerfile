@@ -2,8 +2,7 @@ FROM gcc AS builder
 WORKDIR /src
 COPY main.c . 
 RUN gcc -o main -static main.c 
-# TODO: investigate dynamic linking in building stage
 
 FROM scratch
 COPY --from=builder /src/main .
-ENTRYPOINT ["./main"]
+ENTRYPOINT [ "./main" ]
