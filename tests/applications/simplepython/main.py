@@ -9,11 +9,13 @@ import time
   Return: none (unreachable during normal execution)
 """ 
 def main():
-    print("Welcome from simplepython")
+    # flush for quick visual testing
+    # TODO: can be removed when test becomes automated
+    print("Welcome from simplepython", flush=True) 
 
     var = 0
     while True:
-        print(var)
+        print(var, flush=True)
 
         time.sleep(1)
         var += 1

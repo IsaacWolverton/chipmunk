@@ -4,8 +4,18 @@ MIT 6.824 Spring 2020 Final Project, Ishani, Matt, Isaac
 
 ## Project structure
 
+## Testing
+
+In addition to unittesting, the project supplies a few different test applications
+that can be ran as follows:
+
+```
+make test APP=simplepython
+```
+
 ## Requirements
 - Docker (tested with v19.03.08)
+- make (tested with gnu 3.81)
 
 ## Todos
 
