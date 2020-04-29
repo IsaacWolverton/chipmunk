@@ -9,13 +9,14 @@ MIT 6.824 Spring 2020 Final Project, Ishani, Matt, Isaac
 In addition to unittesting, the project supplies a few different test applications
 that can be ran as follows:
 
-```
+```bash
 make test APP=simplepython
 ```
 
 ## Requirements
+
 - Docker (tested with v19.03.08)
-- make (tested with gnu 3.81)
+- make (tested with gnu eddition v3.81)
 
 ## Todos
 
@@ -25,7 +26,9 @@ make test APP=simplepython
 - [ ] Setup Terraform config to create a small Kubernetes Cluster on GCP
 - [ ] Set terraform backend to a cheap GCP bucket to maintain consistent state <https://www.terraform.io/docs/backends/index.html>
 - [x] Create a docker container with a simple program, like the counter
-  - `tests/applications/simplecounter/` with matching Dockerfile.
+  - `tests/applications/simplecounter/` with matching Dockerfile
+  - `tests/applications/simplepython/` with matching Dockerfile
+  - run`  make [appname]` in test directory root to build the application container
 - [ ] Create a Kubernetes config that auto schedules this container (in the form of a deployment) 
 - [ ] Run the deployment (the counter should work at this point)
 - [ ] Write the CRIU checkpointing scripts
