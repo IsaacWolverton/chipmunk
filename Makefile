@@ -1,4 +1,4 @@
-.PHONY: deploy .check-APP
+.PHONY: test .check-APP
 .check-APP:
 ifndef APP
 	$(error APP is undefined [simplecounter, simplepython, simpletcp])
@@ -7,8 +7,7 @@ endif
 default: 
 	@cd src; \
 	docker build . --tag chipmunk
-
-test: .check-APP clean
+test: .check-APP clean default
 	@cd tests; \
 	make ${APP}
 
@@ -17,6 +16,8 @@ test: .check-APP clean
 
 	docker run --privileged -d -v "$(shell pwd)/shared":/shared/ --name chipmunk chipmunk
 	docker exec -i chipmunk docker load < shared/application.tar
+	docker exec -d chipmunk docker run --name application ${APP}
+	docker exec -i chipmunk chipmunk
 
 tests: clean
 	# TODO: run src tests, all test app, etc

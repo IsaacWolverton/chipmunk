@@ -1,4 +1,5 @@
-FROM debian AS criu
+# Build criu
+FROM debian AS criu_builder
 RUN apt-get update -qq && apt-get install -qq -y \
     gcc-multilib \
     build-essential \
@@ -17,6 +18,19 @@ WORKDIR /criu
 RUN make
 
 
+# Build chipmunk
+FROM golang:1.14.2 AS chipmunk_builder
+ENV GO111MODULE=on
+
+COPY go.mod go.sum /src/
+WORKDIR /src
+RUN go mod download
+
+COPY main.go .
+RUN env GOOS=linux GOARCH=amd64 go build chipmunk
+
+
+# Main docker file
 FROM debian
 COPY scripts/criu.package.list package.list
 RUN apt-get update -qq && apt-get install -qq -y $(grep -vE "^\s*#" package.list  | tr "\n" " ")
@@ -35,7 +49,9 @@ RUN apt-get update -qq && apt-get install -qq -y docker-ce docker-ce-cli
 RUN mkdir /etc/docker
 RUN echo "{\"experimental\": true}" >> /etc/docker/daemon.json
 
-COPY --from=criu criu/criu/criu /bin/criu
+COPY --from=criu_builder criu/criu/criu /bin/criu
+COPY --from=chipmunk_builder src/chipmunk /bin/chipmunk
+
 
 # TODO: will be the application managing checkpoints and moby will be running in the background
 ENTRYPOINT [ "dockerd" ]

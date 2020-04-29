@@ -4,7 +4,7 @@
 /**
  * This program will continously count from 0 to 2^16 inclusively
  * and output the current value every 1 seconds to stdout
- * Parameters: none
+ *  Parameters: none
  *  Return: 
  *    - status code, where 0 is success (however, unreachable
  *      during normal execution of program)

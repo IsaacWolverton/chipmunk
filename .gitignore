@@ -1,4 +1,5 @@
 *.out
 *.tar
+chipmunk
 
 shared/
