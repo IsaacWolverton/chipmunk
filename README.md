@@ -30,8 +30,9 @@ make test APP=simplepython
   - `tests/applications/simplepython/` with matching Dockerfile
   - run`  make [appname]` in test directory root to build the application container
 - [ ] Create a Kubernetes config that auto schedules this container (in the form of a deployment) 
-- [ ] Run the deployment (the counter should work at this point)
-- [ ] Write the CRIU checkpointing scripts
+- [ ] Run the deployment (the counter should work at this point) 
+- [x] Write the CRIU checkpointing scripts
+  - `src` is where all state saving code will live, there exists a `chipmunk` go module that performs the checkpointing. The `chipmunk` go module will handle the more extreme state saving including file versioning and network saving.
 - [ ] Update the Kubernetes config to call startup scripts that attempt to restore from the latest checkpoint (if one exists)
 - [ ] Run the deployment and then kill the counter, it should be auto restarted and rescheduled by Kubernetes and our setup script should restore from the latest checkpoint 
 - [ ] Update the checkpointing script to log all network traffic
