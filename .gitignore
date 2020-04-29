@@ -13,4 +13,3 @@ shared/
 *.tfstate*
 *.tfvars
 .terraform
-*key-file.json
