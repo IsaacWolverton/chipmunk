@@ -54,4 +54,4 @@ COPY --from=chipmunk_builder src/chipmunk /bin/chipmunk
 
 
 # TODO: will be the application managing checkpoints and moby will be running in the background
-ENTRYPOINT [ "dockerd" ]
+CMD dockerd

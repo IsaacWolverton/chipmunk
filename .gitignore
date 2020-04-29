@@ -1,5 +1,15 @@
+# Builded binaries
 *.out
 *.tar
 chipmunk
 
+# Generated output
 shared/
+
+# macOS specific files
+.DS_store
+
+# Terraform
+*.tfstate*
+*.tfvars
+.terraform

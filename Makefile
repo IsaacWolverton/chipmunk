@@ -7,6 +7,7 @@ endif
 default: 
 	@cd src; \
 	docker build . --tag chipmunk
+
 test: .check-APP clean default
 	@cd tests; \
 	make ${APP}
@@ -16,8 +17,10 @@ test: .check-APP clean default
 
 	docker run --privileged -d -v "$(shell pwd)/shared":/shared/ --name chipmunk chipmunk
 	docker exec -i chipmunk docker load < shared/application.tar
-	docker exec -d chipmunk docker run --name application ${APP}
-	docker exec -i chipmunk chipmunk
+	# TODO: does not work with golang log, only fmt
+	docker exec chipmunk docker run --name application ${APP} &> shared/application.log &
+	docker exec chipmunk chipmunk &> shared/chipmunk.log &
+	@echo "done"
 
 tests: clean
 	# TODO: run src tests, all test app, etc
