@@ -1,4 +1,4 @@
-.PHONY: test .chipmunk .check-APP .check-SERVICE
+.PHONY: test .chipmunk .test-app .check-APP .check-SERVICE
 .check-APP:
 ifndef APP
 	$(error APP is undefined [simplecounter, simplepython, simplehttp])
@@ -11,8 +11,7 @@ endif
 
 
 default: .check-APP
-	@cd tests; \
-	make ${APP}
+	make .test-app APP=$(APP)
 
 	make .chipmunk SERVICE=configurator
 	make .chipmunk SERVICE=checkpointer
@@ -23,9 +22,12 @@ default: .check-APP
 	docker build . -t gcr.io/mit-mic/${SERVICE}:v1; \
 	docker push gcr.io/mit-mic/${SERVICE}:v1\
 
-test: .check-APP clean default
+.test-app: .check-APP
 	@cd tests; \
 	make ${APP}
+
+test: .check-APP clean default
+	make .test-app APP=$(APP)
 
 	@mkdir shared
 	@mv tests/application.tar shared/ 
