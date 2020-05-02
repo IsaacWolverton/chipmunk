@@ -94,7 +94,8 @@ resource "kubernetes_daemonset" "configurator" {
 
 resource "kubernetes_pod" "chipmunk" {
 	depends_on = [
-		var.application_pool
+		var.application_pool,
+		google_storage_bucket_object.chipmunk-application
     ]
 
 	metadata {
@@ -105,7 +106,7 @@ resource "kubernetes_pod" "chipmunk" {
 	}
 
 	spec {
-		host_network = true # TODO: maybe?
+		# host_network = true # Allows for host node to be exposed, nice for testing restore occured on another node
 		toleration {
 			key      = "configured"
 			operator = "Equal"
@@ -142,6 +143,16 @@ resource "kubernetes_pod" "chipmunk" {
 				name = "dockerd"
 				mount_path = "/var/run/docker.sock"
 			}
+
+			env {
+				name  = "APPLICATION_IMAGE"
+				value = var.application_image
+			}
+
+			env {
+				name  = "BUCKET"
+				value = google_storage_bucket.chipmunk-storage.name
+			}
 		}
 
 		container {
@@ -149,6 +160,11 @@ resource "kubernetes_pod" "chipmunk" {
 			name  = "proxy"
 
 			image_pull_policy = "Always"
+
+			env {
+				name  = "APPLICATION_PORT"
+				value = var.application_port
+			}
 		}
 
 		volume {

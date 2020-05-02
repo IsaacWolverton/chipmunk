@@ -23,6 +23,32 @@ variable "zone" {
 }
 
 /**
+ * Name of the application that is being ran in chipmunk
+ */
+variable "application_image" {
+	type = string
+	description = "name of the application that is being ran in chipmunk"
+}
+
+/**
+ * Path to the saved application image
+ */
+variable "application_path" {
+	type = string
+	description = "path to the saved application image"
+	default = "../tests/application.tar"
+}
+
+/**
+ * Port of the application
+ */
+variable "application_port" {
+	type = number
+	description = "port of the application"
+	default = 8080
+}
+
+/**
  * Custom range for the deployment's network
  */
 variable "ip_range" {

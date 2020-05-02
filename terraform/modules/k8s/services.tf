@@ -13,7 +13,7 @@ resource "kubernetes_service" "chipmunk-proxy" {
         }
         
         port {
-            port = 80
+            port = var.application_port
             target_port = 42069
         }
         

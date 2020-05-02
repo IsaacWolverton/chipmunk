@@ -5,13 +5,25 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
+	"strconv"
 	"strings"
 )
 
-const (
+var (
 	localPort  int = 42069
-	remotePort int = 80 // TODO: Environment variable
+	remotePort int
 )
+
+func init() {
+	// get the application image name from the environment
+	var err error
+	remotePort, err = strconv.Atoi(os.Getenv("APPLICATION_PORT"))
+	if err != nil {
+		log.Println("failed to parse port number", err)
+		remotePort = 8080
+	}
+}
 
 func main() {
 	// TODO: UDP as well
@@ -39,9 +51,12 @@ func main() {
 		log.Println("proxied connect, sending data")
 		go func() {
 			io.Copy(appConn, conn)
+			// log.Println("incoming: ", data)
+
 		}()
 		go func() {
 			io.Copy(conn, appConn)
+			// log.Println("outcoming: ", data)
 		}()
 	}
 }
