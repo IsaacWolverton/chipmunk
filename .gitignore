@@ -11,7 +11,6 @@ shared/
 
 # Terraform
 *.tfstate*
-*.tfvars
 .terraform
 
 # GCP
