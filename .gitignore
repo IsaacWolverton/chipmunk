@@ -13,3 +13,6 @@ shared/
 *.tfstate*
 *.tfvars
 .terraform
+
+# GCP
+credentials.json

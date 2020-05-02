@@ -1,32 +1,15 @@
-variable "project_id" {
-  description = "project id"
+resource "google_compute_network" "chipmunk-network" {
+	name    = "chipmunk-network"
+	project = var.project
+	
+	auto_create_subnetworks = "false"
 }
 
-variable "region" {
-  description = "region"
-}
-
-provider "google" {
-  project = var.project_id
+resource "google_compute_subnetwork" "chipmunk-subnet" {
+  name    = "chipmunk-subnet"
+  project = var.project
   region  = var.region
-}
 
-# VPC
-resource "google_compute_network" "vpc" {
-  name                    = "${var.project_id}-vpc"
-  auto_create_subnetworks = "false"
-}
-
-# Subnet
-resource "google_compute_subnetwork" "subnet" {
-  name          = "${var.project_id}-subnet"
-  region        = var.region
-  network       = google_compute_network.vpc.name
-  ip_cidr_range = "10.10.0.0/24"
-
-}
-
-output "region" {
-  value       = var.region
-  description = "region"
+  network       = google_compute_network.chipmunk-network.name
+  ip_cidr_range = var.ip_range
 }

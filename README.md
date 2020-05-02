@@ -16,6 +16,7 @@ make test APP=simplepython
 ## Requirements
 
 - Docker (tested with v19.03.08)
+- Google Cloud SDK (gcloud, tested with v290.0.1)
 - make (tested with gnu eddition v3.81)
 
 ## Todos
