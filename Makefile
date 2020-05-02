@@ -1,7 +1,7 @@
 .PHONY: test .check-APP
 .check-APP:
 ifndef APP
-	$(error APP is undefined [simplecounter, simplepython, simpletcp])
+	$(error APP is undefined [simplecounter, simplepython, simplehttp])
 endif
 
 default: 
