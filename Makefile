@@ -17,11 +17,16 @@ test: .check-APP clean default
 
 	docker run --privileged -d -v "$(shell pwd)/shared":/shared/ --name chipmunk chipmunk
 	docker exec -i chipmunk docker load < shared/application.tar
-	# TODO: does not work with golang log, only fmt
+
 	docker exec chipmunk docker run --name application ${APP} &> shared/application.log &
 	docker exec chipmunk chipmunk &> shared/chipmunk.log &
 	@echo "done"
 
+configurator: 
+	@cd src/configurator; \
+	docker build . -t gcr.io/mit-mic/configurator:v1; \
+	docker push gcr.io/mit-mic/configurator:v1\
+	
 tests: clean
 	# TODO: run src tests, all test app, etc
 
