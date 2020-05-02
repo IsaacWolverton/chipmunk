@@ -6,11 +6,23 @@ MIT 6.824 Spring 2020 Final Project, Ishani, Matt, Isaac
 
 ## Testing
 
+### Locally (currently broken)
+
 In addition to unittesting, the project supplies a few different test applications
 that can be ran as follows:
 
 ```bash
 make test APP=simplepython
+```
+
+### GCP 
+
+(make sure your docker client is configure to work with gcr.io repo -- `gcloud auth configure-docker`)
+
+```bash
+make
+cd terraform
+terraform apply
 ```
 
 ## Requirements
@@ -24,8 +36,10 @@ make test APP=simplepython
 - [x] Create a github repo and a GCP project, add everyone
   - Repo: <https://github.com/IsaacWolverton/chipmunk>
   - GCP: <https://console.cloud.google.com/mit-mic>
-- [ ] Setup Terraform config to create a small Kubernetes Cluster on GCP
-- [ ] Set terraform backend to a cheap GCP bucket to maintain consistent state <https://www.terraform.io/docs/backends/index.html>
+- [x] Setup Terraform config to create a small Kubernetes Cluster on GCP
+  - all terraform code and modules live in `/terraform`
+- [x] Set terraform backend to a cheap GCP bucket to maintain consistent state <https://www.terraform.io/docs/backends/index.html>
+  - `chipmunk-tf` bucket
 - [x] Create a docker container with a simple program, like the counter
   - `tests/applications/simplecounter/` with matching Dockerfile
   - `tests/applications/simplepython/` with matching Dockerfile
