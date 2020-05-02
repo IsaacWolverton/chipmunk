@@ -10,7 +10,10 @@ ifndef SERVICE
 endif
 
 
-default: 
+default: .check-APP
+	@cd tests; \
+	make ${APP}
+
 	make .chipmunk SERVICE=configurator
 	make .chipmunk SERVICE=checkpointer
 	make .chipmunk SERVICE=proxy
