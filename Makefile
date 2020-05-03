@@ -15,7 +15,6 @@ default: .check-APP
 
 	make .chipmunk SERVICE=configurator
 	make .chipmunk SERVICE=checkpointer
-	make .chipmunk SERVICE=proxy
 
 .chipmunk: .check-SERVICE
 	@cd src/${SERVICE}; \

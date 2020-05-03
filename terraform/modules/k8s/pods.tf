@@ -153,15 +153,8 @@ resource "kubernetes_pod" "chipmunk" {
 				name  = "BUCKET"
 				value = google_storage_bucket.chipmunk-storage.name
 			}
-		}
 
-		container {
-			image = "gcr.io/mit-mic/proxy:v1"
-			name  = "proxy"
-
-			image_pull_policy = "Always"
-
-			env {
+      env {
 				name  = "APPLICATION_PORT"
 				value = var.application_port
 			}
