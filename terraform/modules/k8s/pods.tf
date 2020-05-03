@@ -46,8 +46,9 @@ resource "kubernetes_daemonset" "configurator" {
 					}
 				}
 
+				// TODO: enforce sensitive service account name from cluster module
 				automount_service_account_token = true
-				service_account_name = "default"
+				service_account_name            = "default"
 				
 				container {
 					image = "gcr.io/mit-mic/configurator:v1"
@@ -183,7 +184,7 @@ resource "kubernetes_daemonset" "test-root-pod" {
     ]
 	
 	metadata {
-		name = "root-pod-test"
+		name = "root-pod"
 		labels = {
       		App = "tester"
     	}
