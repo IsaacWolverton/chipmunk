@@ -6,7 +6,7 @@ COPY go.mod go.sum /src/
 WORKDIR /src
 RUN go mod download
 
-COPY main.go .
+COPY *.go ./
 RUN env GOOS=linux GOARCH=amd64 go build checkpointer
 
 FROM ubuntu:16.04

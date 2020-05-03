@@ -64,8 +64,8 @@ func init() {
 			}
 		}
 
-		// Get the network of the proxy container
-		if strings.Contains(ctn.Names[0], "k8s_proxy_chipmunk") {
+		// Get the network of the checkpointer container
+		if strings.Contains(ctn.Names[0], "k8s_checkpointer_chipmunk") {
 			log.Println("container network", ctn.HostConfig.NetworkMode)
 			networkMode = ctn.HostConfig.NetworkMode
 		}
@@ -130,6 +130,17 @@ func init() {
  */
 func main() {
 	log.Println("Starting checkpointing")
+
+	log.Println("Starting proxy")
+	localAddr := ":42069"
+	targetAddr := ":8080"
+
+	p := Server{
+		Addr:   localAddr,
+		Target: targetAddr,
+	}
+	go p.ListenAndServe()
+
 	// time.Sleep(time.Second * 10)
 	// ctx := context.Background()
 
