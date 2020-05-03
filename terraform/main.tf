@@ -4,7 +4,7 @@ module "network" {
 	project = var.project
 	region  = var.region
 
-	ip_range = var.ip_range
+	ip_range           = var.ip_range
 	secondary_ip_range = var.secondary_ip_range
 }
 

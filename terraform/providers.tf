@@ -1,3 +1,7 @@
+/**
+ * Initialize Terraform with version at least 0.12 as the project
+ * is strongly based on HCL2
+ */
 terraform {
 	required_version = ">= 0.12"
 	
