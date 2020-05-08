@@ -43,13 +43,22 @@ elif [ ! -f /bin/criu ]; then
 
     echo " -> configurating gcsfuse [node]"
     
-    apt-get update -qq && apt-get install -y -qq \ 
-        curl \
-        lsb-release
-    export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
-    echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-    apt-get update -qq && apt-get install -y -qq gcsfuse
+    # apt-get update -qq && apt-get install -y -qq curl
+    # export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
+    # echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list
+    # curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+    # apt-get update -qq && apt-get install -y -qq gcsfuse
+
+    rm -rf /shared; mkdir /shared; chmod 777 /shared
+    # gcsfuse --implicit-dirs chipmunk-storage /shared
+
+
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    sudo apt-get install -qq -y apt-transport-https ca-certificates gnupg
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+    sudo apt-get update -qq && sudo apt-get -qq -y install google-cloud-sdk
+    gcloud config set project 'mit-mic'
+
 
 fi
 

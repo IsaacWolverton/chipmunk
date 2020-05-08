@@ -15,9 +15,10 @@ import (
 )
 
 type Chipmunk struct {
-	Version int
-	docker  *docker.Client
-	gcs     *gcs.Client
+	Version   int
+	docker    *docker.Client
+	gcs       *gcs.Client
+	container string
 }
 
 func NewChipmunk() *Chipmunk {
@@ -95,14 +96,14 @@ func NewChipmunk() *Chipmunk {
 	// Create the container from the image
 	resp, err := chipmunk.docker.ContainerCreate(ctx, &container.Config{
 		Image: applicationImage,
-		Tty:   true,
+		Tty:   false,
 	}, &container.HostConfig{
 		NetworkMode: container.NetworkMode(networkMode),
 	}, nil, "")
 	if err != nil {
 		panic(err)
 	}
-
+	chipmunk.container = resp.ID
 	log.Println("container id", resp.ID)
 
 	// Finally run the container
@@ -110,6 +111,16 @@ func NewChipmunk() *Chipmunk {
 	if err := chipmunk.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		panic(err)
 	}
+	// _, err = exec.Command("docker", "start", resp.ID).Output()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// out, err := exec.Command("gcsfuse", "chipmunk-storage", "/shared").Output()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("%s\n", out)
 
 	return chipmunk
 }
@@ -118,10 +129,12 @@ func (c *Chipmunk) Checkpoint(version int) {
 	log.Printf("Attempting checkpoint: %d\n", version)
 
 	// TODO: dump check point to shared fs with version and not version in name
-	err := chipmunk.docker.CheckpointCreate(ctx, "application", types.CheckpointCreateOptions{
+	ctx := context.Background()
+
+	err := c.docker.CheckpointCreate(ctx, c.container, types.CheckpointCreateOptions{
 		Exit:          false,
 		CheckpointID:  fmt.Sprintf("cp-%d", version),
-		CheckpointDir: "shared",
+		CheckpointDir: fmt.Sprintf("/sheck/%s", applicationImage),
 	})
 	if err != nil {
 		panic(err)

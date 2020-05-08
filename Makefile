@@ -6,7 +6,7 @@ endif
 
 .check-SERVICE:
 ifndef SERVICE
-	$(error SERVICE is undefined [configurator, checkpointer])
+	$(error SERVICE is undefined [configurator, checkpointer, syncer])
 endif
 
 
@@ -17,6 +17,7 @@ endif
 
 	make .chipmunk SERVICE=configurator
 	make .chipmunk SERVICE=checkpointer
+	make .chipmunk SERVICE=syncer
 
 .chipmunk: .check-SERVICE
 	@cd src/${SERVICE}; \

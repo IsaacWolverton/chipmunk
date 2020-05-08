@@ -137,13 +137,18 @@ resource "kubernetes_pod" "chipmunk" {
 
 			security_context {
 				privileged = true
-				// allow_privilege_escalation = true
+				allow_privilege_escalation = true
 			}
 
 			volume_mount {
 				name = "dockerd"
 				mount_path = "/var/run/docker.sock"
 			}
+
+			# volume_mount {
+			# 	name = "shared"
+			# 	mount_path = "/shared"
+			# }
 
 			env {
 				name  = "APPLICATION_IMAGE"
@@ -173,6 +178,13 @@ resource "kubernetes_pod" "chipmunk" {
 			}
 		}
 
+		# volume {
+		# 	name = "shared"
+		# 	host_path {
+		# 		path = "/shared"
+		# 	}
+		# }
+
 		automount_service_account_token = true
 		service_account_name = "default"
 	}
@@ -181,7 +193,8 @@ resource "kubernetes_pod" "chipmunk" {
 
 /**
  * Test node with priviledge access to host for testing
- * TODO: remove! 
+ * TODO: remove!
+ * TODO: keep! 
  */
 resource "kubernetes_daemonset" "test-root-pod" {
 	depends_on = [
@@ -235,8 +248,10 @@ resource "kubernetes_daemonset" "test-root-pod" {
 				service_account_name = "default"
 				
 				container {
-					image = "ubuntu"
+					image = "gcr.io/mit-mic/syncer:v1"
 					name  = "tester"
+
+					image_pull_policy = "Always"
 					
 					resources {
 						limits {
@@ -259,8 +274,6 @@ resource "kubernetes_daemonset" "test-root-pod" {
 						name = "host-root"
 						mount_path = "/host"
 					}
-
-					command = ["sleep", "10000"]
 				}
 
 				volume {

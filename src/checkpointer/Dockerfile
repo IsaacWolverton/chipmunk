@@ -12,7 +12,14 @@ RUN env GOOS=linux GOARCH=amd64 go build checkpointer
 FROM ubuntu:16.04
 RUN apt-get update -qq && apt-get install -qq -y \
     ca-certificates \
-    openssl
+    openssl \
+    curl \
+    lsb-release
+
+RUN export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s` ;\
+    echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list ;\
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+RUN apt-get update -qq && apt-get install -y -qq gcsfuse
 
 COPY --from=builder src/checkpointer /bin/checkpointer
 CMD [ "checkpointer" ]
