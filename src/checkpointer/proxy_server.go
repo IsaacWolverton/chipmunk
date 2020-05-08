@@ -43,7 +43,7 @@ func (s *Server) ListenAndServe() error {
 		return err
 	}
 	// currentTime := time.Now()
-	s.SaveFile = "network-0" // currentTime.Format("2006-01-02-15-04-05")
+	// s.SaveFile = "network-0" // currentTime.Format("2006-01-02-15-04-05")
 	return s.serve(listener)
 }
 
@@ -127,16 +127,18 @@ func (s *Server) handleConn(conn net.Conn) {
 			s.ReplayPath = "" // prevent future connections from replaying the same traffic
 			if err != nil {
 				log.Println(err)
-				s.mu.Unlock()
-				return
+				// s.mu.Unlock()
+			} else {
+				log.Println(" >-> replaying")
+				log.Println(replay_b)
+				log.Println(string(replay_b))
+				_, err = dst.Write(replay_b)
+				if err != nil {
+					log.Println(err)
+					// s.mu.Unlock()
+				}
 			}
 
-			_, err = dst.Write(replay_b)
-			if err != nil {
-				log.Println(err)
-				s.mu.Unlock()
-				return
-			}
 			log.Println("Replay Complete")
 			s.mu.Unlock()
 		}
@@ -144,8 +146,8 @@ func (s *Server) handleConn(conn net.Conn) {
 		for {
 			n, err := src.Read(buff)
 			if err != nil {
-				log.Println("Read from Source error:")
-				log.Println(err)
+				// log.Println("Read from Source error:")
+				// log.Println(err)
 				return
 			}
 
@@ -161,6 +163,8 @@ func (s *Server) handleConn(conn net.Conn) {
 				log.Println("Error opening file:")
 				log.Println(err)
 			}
+			fmt.Println(b)
+			fmt.Println(string(b))
 			if _, err := f.Write(b); err != nil {
 				log.Println("Write error to file:")
 				log.Println(err)

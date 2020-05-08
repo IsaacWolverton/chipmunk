@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 
 	gcs "cloud.google.com/go/storage"
@@ -108,7 +109,21 @@ func NewChipmunk() *Chipmunk {
 
 	// Finally run the container
 	// TODO: start from checkpoint
-	if err := chipmunk.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+
+	var options types.ContainerStartOptions
+	if checkpointVersion != -1 {
+		out, err := exec.Command("cp", "-r", fmt.Sprintf("/sheck/%s/cp-%d", applicationImage, checkpointVersion), fmt.Sprintf("/containers/%s/checkpoints/", resp.ID)).Output()
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println(string(out))
+
+		options = types.ContainerStartOptions{CheckpointID: fmt.Sprintf("cp-%d", checkpointVersion)}
+	} else {
+		options = types.ContainerStartOptions{}
+	}
+
+	if err := chipmunk.docker.ContainerStart(ctx, resp.ID, options); err != nil {
 		panic(err)
 	}
 	// _, err = exec.Command("docker", "start", resp.ID).Output()

@@ -14,7 +14,8 @@ RUN apt-get update -qq && apt-get install -qq -y \
     ca-certificates \
     openssl \
     curl \
-    lsb-release
+    lsb-release \
+    python3
 
 RUN export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s` ;\
     echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list ;\
@@ -22,4 +23,5 @@ RUN export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s` ;\
 RUN apt-get update -qq && apt-get install -y -qq gcsfuse
 
 COPY --from=builder src/checkpointer /bin/checkpointer
+
 CMD [ "checkpointer" ]

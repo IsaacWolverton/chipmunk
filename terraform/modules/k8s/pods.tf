@@ -146,6 +146,11 @@ resource "kubernetes_pod" "chipmunk" {
 			}
 
 			volume_mount {
+				name = "containerd"
+				mount_path = "/containers"
+			}
+
+			volume_mount {
 				name = "shared"
 				mount_path = "/sheck"
 			}
@@ -175,6 +180,13 @@ resource "kubernetes_pod" "chipmunk" {
 			name = "dockerd"
 			host_path {
 				path = "/var/run/docker.sock"
+			}
+		}
+
+		volume {
+			name = "containerd"
+			host_path {
+				path = "/var/lib/docker/containers"
 			}
 		}
 
