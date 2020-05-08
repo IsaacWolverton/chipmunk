@@ -56,8 +56,6 @@ func init() {
 	if err != nil {
 		checkpointVersion = -1
 	} else {
-		log.Println(string(out))
-		log.Println(strconv.Atoi(string(out)))
 		checkpointVersion, _ = strconv.Atoi(strings.TrimSuffix(string(out), "\n"))
 	}
 	log.Println("version:", checkpointVersion)

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -42,8 +43,41 @@ func (s *Server) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
-	// currentTime := time.Now()
-	// s.SaveFile = "network-0" // currentTime.Format("2006-01-02-15-04-05")
+
+	if s.ReplayPath != "" {
+		// the user wants to replay network traffic
+		s.mu.Lock()
+		log.Println("Replaying traffic from:", s.ReplayPath)
+		replay_b, err := ioutil.ReadFile(s.ReplayPath)
+		s.ReplayPath = "" // prevent future connections from replaying the same traffic
+		if err != nil {
+			log.Println(err)
+		} else {
+			log.Println(" >-> replaying")
+			str := string(replay_b)
+			log.Println(str)
+			requests := strings.Split(str, "\r\n\r\n")
+			log.Println(len(requests))
+			for i, req := range requests {
+				replay_conn, err := net.Dial("tcp", s.Target)
+				if err != nil {
+					return nil
+				}
+				new_b := []byte(req + "\r\n\r\n")
+				log.Println(fmt.Sprintf("sending replay message: %d", i))
+				log.Println("Contents:" + req)
+				_, err = replay_conn.Write(new_b)
+				if err != nil {
+					log.Println("replay err:")
+					log.Println(err)
+				}
+				replay_conn.Close()
+			}
+		}
+
+		log.Println("Replay Complete")
+		s.mu.Unlock()
+	}
 	return s.serve(listener)
 }
 
@@ -67,8 +101,7 @@ func (s *Server) StopProxy(version int) string {
 	s.mu.Lock()
 
 	//update SaveFile
-	// currentTime := time.Now()
-	s.SaveFile = fmt.Sprintf("network-%d", version) // currentTime.Format("2006-01-02-15-04-05")
+	s.SaveFile = fmt.Sprintf("network-%d", version)
 	return s.SaveFile
 }
 
@@ -119,35 +152,10 @@ func (s *Server) handleConn(conn net.Conn) {
 		}()
 
 		buff := make([]byte, 65535)
-		if s.ReplayPath != "" {
-			// the user wants to replay network traffic
-			s.mu.Lock()
-			log.Println("Replaying traffic from:", s.ReplayPath)
-			replay_b, err := ioutil.ReadFile(s.ReplayPath)
-			s.ReplayPath = "" // prevent future connections from replaying the same traffic
-			if err != nil {
-				log.Println(err)
-				// s.mu.Unlock()
-			} else {
-				log.Println(" >-> replaying")
-				log.Println(replay_b)
-				log.Println(string(replay_b))
-				_, err = dst.Write(replay_b)
-				if err != nil {
-					log.Println(err)
-					// s.mu.Unlock()
-				}
-			}
-
-			log.Println("Replay Complete")
-			s.mu.Unlock()
-		}
 
 		for {
 			n, err := src.Read(buff)
 			if err != nil {
-				// log.Println("Read from Source error:")
-				// log.Println(err)
 				return
 			}
 
@@ -165,6 +173,7 @@ func (s *Server) handleConn(conn net.Conn) {
 			}
 			fmt.Println(b)
 			fmt.Println(string(b))
+
 			if _, err := f.Write(b); err != nil {
 				log.Println("Write error to file:")
 				log.Println(err)
@@ -172,6 +181,7 @@ func (s *Server) handleConn(conn net.Conn) {
 				s.mu.Unlock()
 				return
 			}
+
 			f.Close()
 
 			// send the data along the connection now that it has been saved
