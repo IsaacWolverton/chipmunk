@@ -10,8 +10,10 @@ ifndef SERVICE
 endif
 
 
-default: .check-APP
+default:
+ifdef APP
 	make .test-app APP=$(APP)
+endif
 
 	make .chipmunk SERVICE=configurator
 	make .chipmunk SERVICE=checkpointer

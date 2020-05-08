@@ -32,4 +32,5 @@ module "k8s" {
 	application_image = var.application_image
 	application_path  = var.application_path
 	application_port  = var.application_port
+	application_image_pull_policy = var.application_image_pull_policy
 }

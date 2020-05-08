@@ -31,6 +31,15 @@ variable "application_image" {
 }
 
 /**
+ * Whether to pull the application or load from fs
+ */
+variable "application_image_pull_policy" {
+	type = string
+	description = "whether to pull the application [pull] or load from fs [load]"
+	default = "load"
+}
+
+/**
  * Path to the saved application image
  */
 variable "application_path" {

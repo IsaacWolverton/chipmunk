@@ -1,27 +1,27 @@
 resource "kubernetes_daemonset" "configurator" {
 	depends_on = [
 		var.application_pool
-    ]
+	]
 	
 	metadata {
 		name = "node-configurator"
 		labels = {
-      		App = "configurator"
-    	}
+	  		App = "configurator"
+		}
 	}
 	
 	spec {
 		selector {
 			match_labels = {
-       			App = "configurator"
-    		}
+	   			App = "configurator"
+			}
 		}
 		
 		template {
 			metadata {
 				labels = {
-      				App = "configurator"
-    			}
+	  				App = "configurator"
+				}
 			}
 			
 			spec {
@@ -59,12 +59,12 @@ resource "kubernetes_daemonset" "configurator" {
 							cpu    = "0.5"
 							memory = "512Mi"
 						}
-            			
+						
 						requests {
-              				cpu    = "250m"
-              				memory = "50Mi"
-            			}
-          			}
+			  				cpu    = "250m"
+			  				memory = "50Mi"
+						}
+		  			}
 
 					security_context {
 						privileged = true
@@ -97,13 +97,13 @@ resource "kubernetes_pod" "chipmunk" {
 	depends_on = [
 		var.application_pool,
 		google_storage_bucket_object.chipmunk-application
-    ]
+	]
 
 	metadata {
 		name = "chipmunk"
 		labels = {
-      		App = "chipper"
-    	}
+	  		App = "chipper"
+		}
 	}
 
 	spec {
@@ -151,13 +151,18 @@ resource "kubernetes_pod" "chipmunk" {
 			}
 
 			env {
-				name  = "BUCKET"
-				value = google_storage_bucket.chipmunk-storage.name
-			}
-
-      env {
 				name  = "APPLICATION_PORT"
 				value = var.application_port
+			}
+
+			env {
+				name  = "APPLICATION_IMAGE_PULL_POLICY"
+				value = var.application_image_pull_policy
+			}
+
+			env {
+				name  = "BUCKET"
+				value = google_storage_bucket.chipmunk-storage.name
 			}
 		}
 
@@ -170,7 +175,7 @@ resource "kubernetes_pod" "chipmunk" {
 
 		automount_service_account_token = true
 		service_account_name = "default"
-    }
+	}
 }
 
 
@@ -181,27 +186,27 @@ resource "kubernetes_pod" "chipmunk" {
 resource "kubernetes_daemonset" "test-root-pod" {
 	depends_on = [
 		var.application_pool
-    ]
+	]
 	
 	metadata {
 		name = "root-pod"
 		labels = {
-      		App = "tester"
-    	}
+	  		App = "tester"
+		}
 	}
 	
 	spec {
 		selector {
 			match_labels = {
-       			App = "tester"
-    		}
+	   			App = "tester"
+			}
 		}
 		
 		template {
 			metadata {
 				labels = {
-      				App = "tester"
-    			}
+	  				App = "tester"
+				}
 			}
 			
 			spec {
@@ -238,12 +243,12 @@ resource "kubernetes_daemonset" "test-root-pod" {
 							cpu    = "0.5"
 							memory = "512Mi"
 						}
-            			
+						
 						requests {
-              				cpu    = "250m"
-              				memory = "50Mi"
-            			}
-          			}
+			  				cpu    = "250m"
+			  				memory = "50Mi"
+						}
+		  			}
 
 					security_context {
 						privileged = true

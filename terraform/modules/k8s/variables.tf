@@ -11,6 +11,9 @@ variable "project" { }
 variable "application_image" { }
 
 // See main definition
+variable "application_image_pull_policy" { }
+
+// See main definition
 variable "application_path" { }
 
 // See main definition
