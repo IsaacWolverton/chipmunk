@@ -27,9 +27,10 @@ type Chipmunk struct {
 func NewChipmunk() *Chipmunk {
 	chipmunk := &Chipmunk{}
 
-	//mk mount point dir
+	//mk mount point dir & sheck fs dir
 	dirName := fmt.Sprintf("/sheck/%s/fs", applicationImage)
-	os.Mkdir("/sheck/%s/fs", 0755)
+	os.Mkdir(dirName, 0755)
+	os.Mkdir("/mount", 0755)
 
 	// Initialize the docker client
 	var err error
@@ -92,7 +93,7 @@ func NewChipmunk() *Chipmunk {
 		// 	panic(err)
 		// }
 		// defer fr.Close()
-		// err := Untar(fr, /sheck/%s/fs)
+		// err := Untar(fr, /mount)
     // if err != nil {
     // 	panic(err)
     // }
@@ -121,7 +122,7 @@ func NewChipmunk() *Chipmunk {
 		Mounts: []mount.Mount{
                     mount.Mount{
                         Type:   mount.TypeBind,
-                        Source: "/sheck/%s/fs",
+                        Source: "/mount",
                         Target: "/mountApp",
                     },
   							},
@@ -160,7 +161,7 @@ func (c *Chipmunk) Checkpoint(version int) {
 	err := c.docker.CheckpointCreate(ctx, c.container, types.CheckpointCreateOptions{
 		Exit:          false,
 		CheckpointID:  fmt.Sprintf("cp-%d", version),
-		CheckpointDir: fmt.Sprintf("/sheck/%s/fs", applicationImage),
+		CheckpointDir: fmt.Sprintf("/sheck/%s/", applicationImage),
 	})
 	if err != nil {
 		log.Println("EROORE: %s", err)
@@ -175,26 +176,26 @@ func (c *Chipmunk) Checkpoint(version int) {
 }
 
 func tar(version int) {
-	 destinationfile := fmt.Sprintf("fs-%d.tar", version)
-	 sourcedir := fmt.Sprintf("/sheck/%s/fs", applicationImage)
+	 destinationfile := fmt.Sprintf("/sheck/%s/fs-%d.tar", applicationImage, version)
+	 sourcedir := "/mount"
 
 	 dir, err := os.Open(sourcedir)
 	 if err != nil {
-         	panic(err)
-         }
+	 	panic(err)
+	 }
 	 defer dir.Close()
 
 	 // get list of files
 	 files, err := dir.Readdir(0)
 	 if err != nil {
-         	panic(err)
-         }
+   	panic(err)
+   }
 
 	 // create tar file
 	 tarfile, err := os.Create(destinationfile)
 	 if err != nil {
-         	panic(err)
-         }
+   	panic(err)
+   }
 	 defer tarfile.Close()
 
 	 var fileWriter io.WriteCloser = tarfile
@@ -210,8 +211,8 @@ func tar(version int) {
 
 	    file, err := os.Open(dir.Name() + string(filepath.Separator) + fileInfo.Name())
 	    if err != nil {
-            	panic(err)
-            }
+      	panic(err)
+      }
 	    defer file.Close()
 
 	    // prepare the tar header
