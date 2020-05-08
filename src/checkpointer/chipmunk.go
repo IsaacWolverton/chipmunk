@@ -11,7 +11,10 @@ import (
 	gcs "cloud.google.com/go/storage"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
+
+	"golang.org/x/build/internal/untar"
 )
 
 type Chipmunk struct {
@@ -23,6 +26,10 @@ type Chipmunk struct {
 
 func NewChipmunk() *Chipmunk {
 	chipmunk := &Chipmunk{}
+
+	//mk mount point dir
+	dirName := fmt.Sprintf("/sheck/%s/fs", applicationImage)
+	os.Mkdir("/sheck/%s/fs", 0755)
 
 	// Initialize the docker client
 	var err error
@@ -78,6 +85,18 @@ func NewChipmunk() *Chipmunk {
 		if err != nil {
 			panic(err)
 		}
+		//get version number and untar??
+		// fsFile := bucket.Object(fmt.Sprintf("/sheck/%s/fs-%d.tar", applicationImage, version))
+		// fr, err := fsFile.NewReader(ctx)
+		// if err != nil {
+		// 	panic(err)
+		// }
+		// defer fr.Close()
+		// err := Untar(fr, /sheck/%s/fs)
+    // if err != nil {
+    // 	panic(err)
+    // }
+
 		imageFile := bucket.Object(fmt.Sprintf("%s/application.tar", applicationImage))
 		r, err := imageFile.NewReader(ctx)
 		if err != nil {
@@ -99,6 +118,13 @@ func NewChipmunk() *Chipmunk {
 		Tty:   false,
 	}, &container.HostConfig{
 		NetworkMode: container.NetworkMode(networkMode),
+		Mounts: []mount.Mount{
+                    mount.Mount{
+                        Type:   mount.TypeBind,
+                        Source: "/sheck/%s/fs",
+                        Target: "/mountApp",
+                    },
+  							},
 	}, nil, "")
 	if err != nil {
 		panic(err)
@@ -134,11 +160,72 @@ func (c *Chipmunk) Checkpoint(version int) {
 	err := c.docker.CheckpointCreate(ctx, c.container, types.CheckpointCreateOptions{
 		Exit:          false,
 		CheckpointID:  fmt.Sprintf("cp-%d", version),
-		CheckpointDir: fmt.Sprintf("/sheck/%s", applicationImage),
+		CheckpointDir: fmt.Sprintf("/sheck/%s/fs", applicationImage),
 	})
 	if err != nil {
 		log.Println("EROORE: %s", err)
 	}
+	log.Println(" -> CRIU Checkpoint Success!")
+
+	tar(version)
+
+	log.Println(" -> Filesystem Snapshot Success!")
 
 	log.Println(" -> Success!")
+}
+
+func tar(version int) {
+	 destinationfile := fmt.Sprintf("fs-%d.tar", version)
+	 sourcedir := fmt.Sprintf("/sheck/%s/fs", applicationImage)
+
+	 dir, err := os.Open(sourcedir)
+	 if err != nil {
+         	panic(err)
+         }
+	 defer dir.Close()
+
+	 // get list of files
+	 files, err := dir.Readdir(0)
+	 if err != nil {
+         	panic(err)
+         }
+
+	 // create tar file
+	 tarfile, err := os.Create(destinationfile)
+	 if err != nil {
+         	panic(err)
+         }
+	 defer tarfile.Close()
+
+	 var fileWriter io.WriteCloser = tarfile
+
+	 tarfileWriter := tar.NewWriter(fileWriter)
+	 defer tarfileWriter.Close()
+
+	 for _, fileInfo := range files {
+
+	    if fileInfo.IsDir() {
+	       continue
+	    }
+
+	    file, err := os.Open(dir.Name() + string(filepath.Separator) + fileInfo.Name())
+	    if err != nil {
+            	panic(err)
+            }
+	    defer file.Close()
+
+	    // prepare the tar header
+	    header := new(tar.Header)
+	    header.Name = file.Name()
+	    header.Size = fileInfo.Size()
+	    header.Mode = int64(fileInfo.Mode())
+	    header.ModTime = fileInfo.ModTime()
+
+	    err = tarfileWriter.WriteHeader(header)
+	    checkerror(err)
+
+	    _, err = io.Copy(tarfileWriter, file)
+	    checkerror(err)
+	 }
+
 }
