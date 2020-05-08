@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -65,7 +66,7 @@ func main() {
 	p := Server{
 		Addr:       ":42069",
 		Target:     ":8080",
-		PathPrefix: "/sheck",
+		PathPrefix: fmt.Sprintf("/sheck/%s/", applicationImage),
 	}
 	go p.ListenAndServe()
 
@@ -75,9 +76,10 @@ func main() {
 	for {
 		select {
 		case <-time.After(time.Second * 10):
-			p.StopProxy()
+			p.StopProxy(version)
 			chipmunk.Checkpoint(version)
 			p.ResumeProxy()
+
 			version++
 			break
 		}

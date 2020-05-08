@@ -3,12 +3,12 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"sync"
-	"time"
 )
 
 // Server is a TCP server that takes an incoming request and sends it to another
@@ -42,8 +42,8 @@ func (s *Server) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
-	currentTime := time.Now()
-	s.SaveFile = currentTime.Format("2006-01-02-15-04-05")
+	// currentTime := time.Now()
+	s.SaveFile = "network-0" // currentTime.Format("2006-01-02-15-04-05")
 	return s.serve(listener)
 }
 
@@ -63,12 +63,12 @@ func (s *Server) serve(ln net.Listener) error {
 // creates a new SaveFile and returns its name so that the checkpointer can set ReplayPath
 // accordingly in the event of a crash
 // ------------------------------------------------------------------------------------------
-func (s *Server) StopProxy() string {
+func (s *Server) StopProxy(version int) string {
 	s.mu.Lock()
 
 	//update SaveFile
-	currentTime := time.Now()
-	s.SaveFile = currentTime.Format("2006-01-02-15-04-05")
+	// currentTime := time.Now()
+	s.SaveFile = fmt.Sprintf("network-%d", version) // currentTime.Format("2006-01-02-15-04-05")
 	return s.SaveFile
 }
 

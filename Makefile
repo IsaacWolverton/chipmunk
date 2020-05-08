@@ -18,6 +18,7 @@ endif
 	make .chipmunk SERVICE=configurator
 	make .chipmunk SERVICE=checkpointer
 	make .chipmunk SERVICE=syncer
+	kubectl delete pod chipmunk || true
 
 .chipmunk: .check-SERVICE
 	@cd src/${SERVICE}; \
