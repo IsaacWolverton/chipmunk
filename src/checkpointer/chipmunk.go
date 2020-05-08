@@ -27,9 +27,7 @@ type Chipmunk struct {
 func NewChipmunk() *Chipmunk {
 	chipmunk := &Chipmunk{}
 
-	//mk mount point dir & sheck fs dir
-	dirName := fmt.Sprintf("/sheck/%s/fs", applicationImage)
-	os.Mkdir(dirName, 0755)
+	//mk mount point dir
 	os.Mkdir("/mount", 0755)
 
 	// Initialize the docker client
@@ -87,13 +85,13 @@ func NewChipmunk() *Chipmunk {
 			panic(err)
 		}
 		//get version number and untar??
-		// fsFile := bucket.Object(fmt.Sprintf("/sheck/%s/fs-%d.tar", applicationImage, version))
+		// fsFile := bucket.Object(fmt.Sprintf("%s/fs-%d.tar", applicationImage, version))
 		// fr, err := fsFile.NewReader(ctx)
 		// if err != nil {
 		// 	panic(err)
 		// }
 		// defer fr.Close()
-		// err := Untar(fr, /mount)
+		// err := Untar(fr, "/mount")
     // if err != nil {
     // 	panic(err)
     // }
@@ -161,7 +159,7 @@ func (c *Chipmunk) Checkpoint(version int) {
 	err := c.docker.CheckpointCreate(ctx, c.container, types.CheckpointCreateOptions{
 		Exit:          false,
 		CheckpointID:  fmt.Sprintf("cp-%d", version),
-		CheckpointDir: fmt.Sprintf("/sheck/%s/", applicationImage),
+		CheckpointDir: fmt.Sprintf("/sheck/%s", applicationImage),
 	})
 	if err != nil {
 		log.Println("EROORE: %s", err)
@@ -223,10 +221,14 @@ func tar(version int) {
 	    header.ModTime = fileInfo.ModTime()
 
 	    err = tarfileWriter.WriteHeader(header)
-	    checkerror(err)
+			if err != nil {
+      	panic(err)
+      }
 
 	    _, err = io.Copy(tarfileWriter, file)
-	    checkerror(err)
+			if err != nil {
+      	panic(err)
+      }
 	 }
 
 }
