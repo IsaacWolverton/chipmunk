@@ -40,6 +40,14 @@ elif [ ! -f /bin/criu ]; then
     cd /home/root/criu
     make
     cp criu/criu /bin/
+
+    echo " -> configurating gcsfuse [node]"
+    
+    apt-get update -qq && apt-get install -y -qq gcfuse
+    export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
+    echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+
 fi
 
 echo "configuratation done [node]"
