@@ -132,12 +132,11 @@ func main() {
 	log.Println("Starting checkpointing")
 
 	log.Println("Starting proxy")
-	localAddr := ":42069"
-	targetAddr := ":8080"
 
 	p := Server{
-		Addr:   localAddr,
-		Target: targetAddr,
+		Addr:       ":42069",
+		Target:     ":8080",
+		PathPrefix: "/",
 	}
 	go p.ListenAndServe()
 

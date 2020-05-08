@@ -3,9 +3,12 @@
 package main
 
 import (
-	"crypto/tls"
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
+	"sync"
+	"time"
 )
 
 // Server is a TCP server that takes an incoming request and sends it to another
@@ -17,18 +20,19 @@ type Server struct {
 	// TCP address of target server
 	Target string
 
-	// ModifyRequest is an optional function that modifies the request from a client to the target server.
-	ModifyRequest func(b *[]byte)
+	// The path to the directory in which the save file should be written
+	// Note: must end in '/', e.g. "/path/to/bucket/"
+	PathPrefix string
 
-	// ModifyResponse is an optional function that modifies the response from the target server.
-	ModifyResponse func(b *[]byte)
+	// The name of the file that the proxy server is currently writing network traffic to
+	SaveFile string
 
-	// TLS configuration to listen on.
-	TLSConfig *tls.Config
+	// The path to the file that should be loaded and replayed upon the initial call to ListenAndServe
+	// Should be "" (the empty string) if the user does not want to replay any network traffic
+	// example path: "/path/to/the/file"
+	ReplayPath string
 
-	// TLS configuration for the proxy if needed to connect to the target server with TLS protocol.
-	// If nil, TCP protocol is used.
-	TLSConfigTarget *tls.Config
+	mu sync.Mutex
 }
 
 // ListenAndServe listens on the TCP network address laddr and then handle packets
@@ -38,6 +42,8 @@ func (s *Server) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
+	currentTime := time.Now()
+	s.SaveFile = currentTime.Format("2006-01-02-15-04-05")
 	return s.serve(listener)
 }
 
@@ -52,27 +58,42 @@ func (s *Server) serve(ln net.Listener) error {
 	}
 }
 
+// These functions are how the checkpointer stops the proxy from relaying traffic when it
+// is actively checkpointing and resumes when it is finished. Note that StopProxy automatically
+// creates a new SaveFile and returns its name so that the checkpointer can set ReplayPath
+// accordingly in the event of a crash
+// ------------------------------------------------------------------------------------------
+func (s *Server) StopProxy() string {
+	s.mu.Lock()
+
+	//update SaveFile
+	currentTime := time.Now()
+	s.SaveFile = currentTime.Format("2006-01-02-15-04-05")
+	return s.SaveFile
+}
+
+func (s *Server) ResumeProxy() {
+	s.mu.Unlock() // allows proxy to continue functioning as normal
+}
+
+// ------------------------------------------------------------------------------------------
+
 func (s *Server) handleConn(conn net.Conn) {
 	// connects to target server
-	var rconn net.Conn
-	var err error
-	if s.TLSConfigTarget == nil {
-		rconn, err = net.Dial("tcp", s.Target)
-	} else {
-		rconn, err = tls.Dial("tcp", s.Target, s.TLSConfigTarget)
-	}
+	rconn, err := net.Dial("tcp", s.Target)
 	if err != nil {
 		return
 	}
 
 	// write to dst what it reads from src
-	var pipe = func(src, dst net.Conn, filter func(b *[]byte)) {
+	var pipe = func(src, dst net.Conn) {
 		defer func() {
 			conn.Close()
 			rconn.Close()
 		}()
 
 		buff := make([]byte, 65535)
+
 		for {
 			n, err := src.Read(buff)
 			if err != nil {
@@ -80,10 +101,6 @@ func (s *Server) handleConn(conn net.Conn) {
 				return
 			}
 			b := buff[:n]
-
-			if filter != nil {
-				filter(&b)
-			}
 
 			_, err = dst.Write(b)
 			if err != nil {
@@ -93,6 +110,79 @@ func (s *Server) handleConn(conn net.Conn) {
 		}
 	}
 
-	go pipe(conn, rconn, s.ModifyRequest)
-	go pipe(rconn, conn, s.ModifyResponse)
+	// write to dst what it reads from src
+	// while saving all network traffic to s.SaveFile
+	var save_pipe = func(src, dst net.Conn, s *Server) {
+		defer func() {
+			conn.Close()
+			rconn.Close()
+		}()
+
+		buff := make([]byte, 65535)
+		if s.ReplayPath != "" {
+			// the user wants to replay network traffic
+			s.mu.Lock()
+			log.Println("Replaying traffic from:", s.ReplayPath)
+			replay_b, err := ioutil.ReadFile(s.ReplayPath)
+			s.ReplayPath = "" // prevent future connections from replaying the same traffic
+			if err != nil {
+				log.Println(err)
+				s.mu.Unlock()
+				return
+			}
+
+			_, err = dst.Write(replay_b)
+			if err != nil {
+				log.Println(err)
+				s.mu.Unlock()
+				return
+			}
+			log.Println("Replay Complete")
+			s.mu.Unlock()
+		}
+
+		for {
+			n, err := src.Read(buff)
+			if err != nil {
+				log.Println("Read from Source error:")
+				log.Println(err)
+				return
+			}
+
+			s.mu.Lock()
+			b := buff[:n]
+
+			// append this traffic to the current SaveFile
+			filePath := s.PathPrefix + s.SaveFile
+			log.Println("saving network traffic to:", filePath)
+			f, err := os.OpenFile(filePath,
+				os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				log.Println("Error opening file:")
+				log.Println(err)
+			}
+			if _, err := f.Write(b); err != nil {
+				log.Println("Write error to file:")
+				log.Println(err)
+				f.Close()
+				s.mu.Unlock()
+				return
+			}
+			f.Close()
+
+			// send the data along the connection now that it has been saved
+			_, err = dst.Write(b)
+			if err != nil {
+				log.Println("Write error to dest:")
+				log.Println(err)
+				s.mu.Unlock()
+				return
+			}
+
+			s.mu.Unlock()
+		}
+	}
+
+	go save_pipe(conn, rconn, s)
+	go pipe(rconn, conn)
 }
