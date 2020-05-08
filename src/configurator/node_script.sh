@@ -58,7 +58,7 @@ elif [ ! -f /bin/criu ]; then
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
     sudo apt-get update -qq && sudo apt-get -qq -y install google-cloud-sdk
     gcloud config set project 'mit-mic'
-
+    gcloud auth configure-docker
 
 fi
 

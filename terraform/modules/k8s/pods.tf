@@ -145,10 +145,10 @@ resource "kubernetes_pod" "chipmunk" {
 				mount_path = "/var/run/docker.sock"
 			}
 
-			# volume_mount {
-			# 	name = "shared"
-			# 	mount_path = "/shared"
-			# }
+			volume_mount {
+				name = "shared"
+				mount_path = "/sheck"
+			}
 
 			env {
 				name  = "APPLICATION_IMAGE"
@@ -178,12 +178,12 @@ resource "kubernetes_pod" "chipmunk" {
 			}
 		}
 
-		# volume {
-		# 	name = "shared"
-		# 	host_path {
-		# 		path = "/shared"
-		# 	}
-		# }
+		volume {
+			name = "shared"
+			host_path {
+				path = "/sheck"
+			}
+		}
 
 		automount_service_account_token = true
 		service_account_name = "default"

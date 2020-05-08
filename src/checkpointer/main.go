@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -63,12 +62,10 @@ func main() {
 	log.Println("Starting checkpointing")
 
 	log.Println("Starting proxy")
-	localAddr := ":42069"
-	targetAddr := fmt.Sprintf(":%d", applicationPort)
-
 	p := Server{
-		Addr:   localAddr,
-		Target: targetAddr,
+		Addr:       ":42069",
+		Target:     ":8080",
+		PathPrefix: "/sheck",
 	}
 	go p.ListenAndServe()
 
@@ -78,7 +75,9 @@ func main() {
 	for {
 		select {
 		case <-time.After(time.Second * 10):
+			p.StopProxy()
 			chipmunk.Checkpoint(version)
+			p.ResumeProxy()
 			version++
 			break
 		}

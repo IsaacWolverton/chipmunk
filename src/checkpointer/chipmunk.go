@@ -137,7 +137,7 @@ func (c *Chipmunk) Checkpoint(version int) {
 		CheckpointDir: fmt.Sprintf("/sheck/%s", applicationImage),
 	})
 	if err != nil {
-		panic(err)
+		log.Println("EROORE: %s", err)
 	}
 
 	log.Println(" -> Success!")

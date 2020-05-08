@@ -36,7 +36,7 @@ variable "application_image" {
 variable "application_image_pull_policy" {
 	type = string
 	description = "whether to pull the application [pull] or load from fs [load]"
-	default = "load"
+	default = "pull"
 }
 
 /**
