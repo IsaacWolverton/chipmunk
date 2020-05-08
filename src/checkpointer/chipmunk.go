@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
+	"archive/tar"
 	"strings"
 
 	gcs "cloud.google.com/go/storage"
@@ -15,7 +15,6 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
 
-	"golang.org/x/build/internal/untar"
 )
 
 type Chipmunk struct {
@@ -92,7 +91,7 @@ func NewChipmunk() *Chipmunk {
 		// 	panic(err)
 		// }
 		// defer fr.Close()
-		// err := Untar(fr, "/mount")
+		// err := untar(fr)
     // if err != nil {
     // 	panic(err)
     // }
@@ -134,21 +133,7 @@ func NewChipmunk() *Chipmunk {
 
 	// Finally run the container
 	// TODO: start from checkpoint
-
-	var options types.ContainerStartOptions
-	if checkpointVersion != -1 {
-		out, err := exec.Command("cp", "-r", fmt.Sprintf("/sheck/%s/cp-%d", applicationImage, checkpointVersion), fmt.Sprintf("/containers/%s/checkpoints/", resp.ID)).Output()
-		if err != nil {
-			log.Println(err)
-		}
-		log.Println(string(out))
-
-		options = types.ContainerStartOptions{CheckpointID: fmt.Sprintf("cp-%d", checkpointVersion)}
-	} else {
-		options = types.ContainerStartOptions{}
-	}
-
-	if err := chipmunk.docker.ContainerStart(ctx, resp.ID, options); err != nil {
+	if err := chipmunk.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		panic(err)
 	}
 	// _, err = exec.Command("docker", "start", resp.ID).Output()
@@ -181,14 +166,14 @@ func (c *Chipmunk) Checkpoint(version int) {
 	}
 	log.Println(" -> CRIU Checkpoint Success!")
 
-	tar(version)
+	tarFunc(version)
 
 	log.Println(" -> Filesystem Snapshot Success!")
 
 	log.Println(" -> Success!")
 }
 
-func tar(version int) {
+func tarFunc(version int) {
 	 destinationfile := fmt.Sprintf("/sheck/%s/fs-%d.tar", applicationImage, version)
 	 sourcedir := "/mount"
 
@@ -222,7 +207,7 @@ func tar(version int) {
 	       continue
 	    }
 
-	    file, err := os.Open(dir.Name() + string(filepath.Separator) + fileInfo.Name())
+	    file, err := os.Open(dir.Name() + "/" + fileInfo.Name())
 	    if err != nil {
       	panic(err)
       }
@@ -246,4 +231,60 @@ func tar(version int) {
       }
 	 }
 
+}
+
+func untar(fileReader io.Reader) {
+
+   tarBallReader := tar.NewReader(fileReader)
+
+   // Extracting tarred files
+
+   for {
+      header, err := tarBallReader.Next()
+      if err != nil {
+         if err == io.EOF {
+            break
+         }
+         fmt.Println(err)
+         os.Exit(1)
+      }
+
+      // get the individual filename and extract to the current directory
+      filename := header.Name
+
+      switch header.Typeflag {
+         case tar.TypeDir:
+         // handle directory
+         fmt.Println("Creating directory :", filename)
+         err = os.MkdirAll(filename, os.FileMode(header.Mode)) // or use 0755 if you prefer
+
+         if err != nil {
+            fmt.Println(err)
+            os.Exit(1)
+         }
+
+         case tar.TypeReg:
+         // handle normal file
+         fmt.Println("Untarring :", filename)
+         writer, err := os.Create(filename)
+
+         if err != nil {
+            fmt.Println(err)
+            os.Exit(1)
+         }
+
+         io.Copy(writer, tarBallReader)
+
+         err = os.Chmod(filename, os.FileMode(header.Mode))
+
+         if err != nil {
+            fmt.Println(err)
+            os.Exit(1)
+         }
+
+         writer.Close()
+         default:
+         fmt.Printf("Unable to untar type : %c in file %s", header.Typeflag, filename)
+      }
+   }
 }
