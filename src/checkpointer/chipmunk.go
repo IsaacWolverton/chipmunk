@@ -84,17 +84,6 @@ func NewChipmunk() *Chipmunk {
 		if err != nil {
 			panic(err)
 		}
-		//get version number and untar??
-		// fsFile := bucket.Object(fmt.Sprintf("%s/fs-%d.tar", applicationImage, version))
-		// fr, err := fsFile.NewReader(ctx)
-		// if err != nil {
-		// 	panic(err)
-		// }
-		// defer fr.Close()
-		// err := untar(fr)
-		// if err != nil {
-		// 	panic(err)
-		// }
 
 		imageFile := bucket.Object(fmt.Sprintf("%s/application.tar", applicationImage))
 		r, err := imageFile.NewReader(ctx)
@@ -138,7 +127,11 @@ func NewChipmunk() *Chipmunk {
 			log.Println(err)
 		}
 		log.Println(string(out))
-
+		tarout, err := exec.Command("tar", "-xzf", fmt.Sprintf("/sheck/%s/fs-%d.tar", applicationImage, checkpointVersion), "-C", "/mount").Output()
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println(string(tarout))
 		options = types.ContainerStartOptions{CheckpointID: fmt.Sprintf("cp-%d", checkpointVersion)}
 	} else {
 		options = types.ContainerStartOptions{}
@@ -180,7 +173,7 @@ hello:
 	}
 	log.Println(" -> CRIU Checkpoint Success!")
 
-	// tarFunc(version)
+	tarFunc(version)
 
 	log.Println(" -> Filesystem Snapshot Success!")
 
@@ -245,60 +238,4 @@ func tarFunc(version int) {
 		}
 	}
 
-}
-
-func untar(fileReader io.Reader) {
-
-	tarBallReader := tar.NewReader(fileReader)
-
-	// Extracting tarred files
-
-	for {
-		header, err := tarBallReader.Next()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// get the individual filename and extract to the current directory
-		filename := header.Name
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			// handle directory
-			fmt.Println("Creating directory :", filename)
-			err = os.MkdirAll(filename, os.FileMode(header.Mode)) // or use 0755 if you prefer
-
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-
-		case tar.TypeReg:
-			// handle normal file
-			fmt.Println("Untarring :", filename)
-			writer, err := os.Create(filename)
-
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-
-			io.Copy(writer, tarBallReader)
-
-			err = os.Chmod(filename, os.FileMode(header.Mode))
-
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-
-			writer.Close()
-		default:
-			fmt.Printf("Unable to untar type : %c in file %s", header.Typeflag, filename)
-		}
-	}
 }
