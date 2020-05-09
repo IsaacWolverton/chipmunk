@@ -92,7 +92,7 @@ func main() {
 
 	for {
 		select {
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Second * 2):
 			p.StopProxy(version)
 			chipmunk.Checkpoint(version)
 			p.ResumeProxy()

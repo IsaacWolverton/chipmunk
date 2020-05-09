@@ -155,6 +155,11 @@ resource "kubernetes_pod" "chipmunk" {
 				mount_path = "/sheck"
 			}
 
+			volume_mount {
+				name = "fs"
+				mount_path = "/mount"
+			}
+
 			env {
 				name  = "APPLICATION_IMAGE"
 				value = var.application_image
@@ -194,6 +199,13 @@ resource "kubernetes_pod" "chipmunk" {
 			name = "shared"
 			host_path {
 				path = "/sheck"
+			}
+		}
+
+		volume {
+			name = "fs"
+			host_path {
+				path = "/mount"
 			}
 		}
 

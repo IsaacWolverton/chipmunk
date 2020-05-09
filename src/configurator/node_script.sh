@@ -52,6 +52,8 @@ elif [ ! -f /bin/criu ]; then
     rm -rf /shared; mkdir /shared; chmod 777 /shared
     # gcsfuse --implicit-dirs chipmunk-storage /shared
 
+    echo "tcp-established" >  /etc/criu/runc.conf
+    echo "tcp-established" >  /etc/criu/default.conf
 
     echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
     sudo apt-get install -qq -y apt-transport-https ca-certificates gnupg

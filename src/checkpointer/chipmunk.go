@@ -1,12 +1,13 @@
 package main
 
 import (
+	"archive/tar"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"archive/tar"
+	"os/exec"
 	"strings"
 
 	gcs "cloud.google.com/go/storage"
@@ -14,7 +15,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
-
 )
 
 type Chipmunk struct {
@@ -28,7 +28,7 @@ func NewChipmunk() *Chipmunk {
 	chipmunk := &Chipmunk{}
 
 	//mk mount point dir
-	os.Mkdir("/mount", 0755)
+	// os.Mkdir("/sheck/mount", 0755)
 
 	// Initialize the docker client
 	var err error
@@ -92,9 +92,9 @@ func NewChipmunk() *Chipmunk {
 		// }
 		// defer fr.Close()
 		// err := untar(fr)
-    // if err != nil {
-    // 	panic(err)
-    // }
+		// if err != nil {
+		// 	panic(err)
+		// }
 
 		imageFile := bucket.Object(fmt.Sprintf("%s/application.tar", applicationImage))
 		r, err := imageFile.NewReader(ctx)
@@ -118,12 +118,12 @@ func NewChipmunk() *Chipmunk {
 	}, &container.HostConfig{
 		NetworkMode: container.NetworkMode(networkMode),
 		Mounts: []mount.Mount{
-                    mount.Mount{
-                        Type:   mount.TypeBind,
-                        Source: "/mount",
-                        Target: "/mountApp",
-                    },
-  							},
+			mount.Mount{
+				Type:   mount.TypeBind,
+				Source: "/mount",
+				Target: "/mountApp",
+			},
+		},
 	}, nil, "")
 	if err != nil {
 		panic(err)
@@ -131,9 +131,21 @@ func NewChipmunk() *Chipmunk {
 	chipmunk.container = resp.ID
 	log.Println("container id", resp.ID)
 
-	// Finally run the container
-	// TODO: start from checkpoint
-	if err := chipmunk.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	var options types.ContainerStartOptions
+	if checkpointVersion != -1 {
+		out, err := exec.Command("cp", "-r", fmt.Sprintf("/sheck/%s/cp-%d", applicationImage, checkpointVersion), fmt.Sprintf("/containers/%s/checkpoints/", resp.ID)).Output()
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println(string(out))
+
+		options = types.ContainerStartOptions{CheckpointID: fmt.Sprintf("cp-%d", checkpointVersion)}
+	} else {
+		options = types.ContainerStartOptions{}
+	}
+
+	if err := chipmunk.docker.ContainerStart(ctx, resp.ID, options); err != nil {
+		// if err := chipmunk.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		panic(err)
 	}
 	// _, err = exec.Command("docker", "start", resp.ID).Output()
@@ -151,6 +163,7 @@ func NewChipmunk() *Chipmunk {
 }
 
 func (c *Chipmunk) Checkpoint(version int) {
+hello:
 	log.Printf("Attempting checkpoint: %d\n", version)
 
 	// TODO: dump check point to shared fs with version and not version in name
@@ -163,10 +176,11 @@ func (c *Chipmunk) Checkpoint(version int) {
 	})
 	if err != nil {
 		log.Println("EROORE: %s", err)
+		goto hello
 	}
 	log.Println(" -> CRIU Checkpoint Success!")
 
-	tarFunc(version)
+	// tarFunc(version)
 
 	log.Println(" -> Filesystem Snapshot Success!")
 
@@ -174,117 +188,117 @@ func (c *Chipmunk) Checkpoint(version int) {
 }
 
 func tarFunc(version int) {
-	 destinationfile := fmt.Sprintf("/sheck/%s/fs-%d.tar", applicationImage, version)
-	 sourcedir := "/mount"
+	destinationfile := fmt.Sprintf("/sheck/%s/fs-%d.tar", applicationImage, version)
+	sourcedir := "/mount"
 
-	 dir, err := os.Open(sourcedir)
-	 if err != nil {
-	 	panic(err)
-	 }
-	 defer dir.Close()
+	dir, err := os.Open(sourcedir)
+	if err != nil {
+		panic(err)
+	}
+	defer dir.Close()
 
-	 // get list of files
-	 files, err := dir.Readdir(0)
-	 if err != nil {
-   	panic(err)
-   }
+	// get list of files
+	files, err := dir.Readdir(0)
+	if err != nil {
+		panic(err)
+	}
 
-	 // create tar file
-	 tarfile, err := os.Create(destinationfile)
-	 if err != nil {
-   	panic(err)
-   }
-	 defer tarfile.Close()
+	// create tar file
+	tarfile, err := os.Create(destinationfile)
+	if err != nil {
+		panic(err)
+	}
+	defer tarfile.Close()
 
-	 var fileWriter io.WriteCloser = tarfile
+	var fileWriter io.WriteCloser = tarfile
 
-	 tarfileWriter := tar.NewWriter(fileWriter)
-	 defer tarfileWriter.Close()
+	tarfileWriter := tar.NewWriter(fileWriter)
+	defer tarfileWriter.Close()
 
-	 for _, fileInfo := range files {
+	for _, fileInfo := range files {
 
-	    if fileInfo.IsDir() {
-	       continue
-	    }
+		if fileInfo.IsDir() {
+			continue
+		}
 
-	    file, err := os.Open(dir.Name() + "/" + fileInfo.Name())
-	    if err != nil {
-      	panic(err)
-      }
-	    defer file.Close()
+		file, err := os.Open(dir.Name() + "/" + fileInfo.Name())
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
 
-	    // prepare the tar header
-	    header := new(tar.Header)
-	    header.Name = file.Name()
-	    header.Size = fileInfo.Size()
-	    header.Mode = int64(fileInfo.Mode())
-	    header.ModTime = fileInfo.ModTime()
+		// prepare the tar header
+		header := new(tar.Header)
+		header.Name = file.Name()
+		header.Size = fileInfo.Size()
+		header.Mode = int64(fileInfo.Mode())
+		header.ModTime = fileInfo.ModTime()
 
-	    err = tarfileWriter.WriteHeader(header)
-			if err != nil {
-      	panic(err)
-      }
+		err = tarfileWriter.WriteHeader(header)
+		if err != nil {
+			panic(err)
+		}
 
-	    _, err = io.Copy(tarfileWriter, file)
-			if err != nil {
-      	panic(err)
-      }
-	 }
+		_, err = io.Copy(tarfileWriter, file)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 }
 
 func untar(fileReader io.Reader) {
 
-   tarBallReader := tar.NewReader(fileReader)
+	tarBallReader := tar.NewReader(fileReader)
 
-   // Extracting tarred files
+	// Extracting tarred files
 
-   for {
-      header, err := tarBallReader.Next()
-      if err != nil {
-         if err == io.EOF {
-            break
-         }
-         fmt.Println(err)
-         os.Exit(1)
-      }
+	for {
+		header, err := tarBallReader.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-      // get the individual filename and extract to the current directory
-      filename := header.Name
+		// get the individual filename and extract to the current directory
+		filename := header.Name
 
-      switch header.Typeflag {
-         case tar.TypeDir:
-         // handle directory
-         fmt.Println("Creating directory :", filename)
-         err = os.MkdirAll(filename, os.FileMode(header.Mode)) // or use 0755 if you prefer
+		switch header.Typeflag {
+		case tar.TypeDir:
+			// handle directory
+			fmt.Println("Creating directory :", filename)
+			err = os.MkdirAll(filename, os.FileMode(header.Mode)) // or use 0755 if you prefer
 
-         if err != nil {
-            fmt.Println(err)
-            os.Exit(1)
-         }
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 
-         case tar.TypeReg:
-         // handle normal file
-         fmt.Println("Untarring :", filename)
-         writer, err := os.Create(filename)
+		case tar.TypeReg:
+			// handle normal file
+			fmt.Println("Untarring :", filename)
+			writer, err := os.Create(filename)
 
-         if err != nil {
-            fmt.Println(err)
-            os.Exit(1)
-         }
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 
-         io.Copy(writer, tarBallReader)
+			io.Copy(writer, tarBallReader)
 
-         err = os.Chmod(filename, os.FileMode(header.Mode))
+			err = os.Chmod(filename, os.FileMode(header.Mode))
 
-         if err != nil {
-            fmt.Println(err)
-            os.Exit(1)
-         }
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 
-         writer.Close()
-         default:
-         fmt.Printf("Unable to untar type : %c in file %s", header.Typeflag, filename)
-      }
-   }
+			writer.Close()
+		default:
+			fmt.Printf("Unable to untar type : %c in file %s", header.Typeflag, filename)
+		}
+	}
 }
