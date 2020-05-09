@@ -29,9 +29,13 @@ func NewChipmunk() *Chipmunk {
 
 	//mk mount point dir
 	// os.Mkdir("/sheck/mount", 0755)
-
+	//ensure mount directory is empty
+	cmd, err := exec.Command("rm", "-r", "/mount/*").Output()
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println(cmd)
 	// Initialize the docker client
-	var err error
 	chipmunk.docker, err = docker.NewClientWithOpts(docker.WithVersion("1.39"))
 	if err != nil {
 		panic(err)
