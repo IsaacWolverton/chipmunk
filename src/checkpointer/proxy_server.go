@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Server is a TCP server that takes an incoming request and sends it to another
@@ -47,6 +48,7 @@ func (s *Server) ListenAndServe() error {
 	if s.ReplayPath != "" {
 		// the user wants to replay network traffic
 		s.mu.Lock()
+		time.Sleep(5 * time.Second)
 		log.Println("Replaying traffic from:", s.ReplayPath)
 		replay_b, err := ioutil.ReadFile(s.ReplayPath)
 		s.ReplayPath = "" // prevent future connections from replaying the same traffic
@@ -55,13 +57,12 @@ func (s *Server) ListenAndServe() error {
 		} else {
 			log.Println(" >-> replaying")
 			str := string(replay_b)
-			log.Println(str)
 			requests := strings.Split(str, "\r\n\r\n")
-			log.Println(len(requests))
 			for i, req := range requests {
 				replay_conn, err := net.Dial("tcp", s.Target)
 				if err != nil {
-					return nil
+					log.Println("failed to form replay connection")
+					continue
 				}
 				new_b := []byte(req + "\r\n\r\n")
 				log.Println(fmt.Sprintf("sending replay message: %d", i))
@@ -171,8 +172,6 @@ func (s *Server) handleConn(conn net.Conn) {
 				log.Println("Error opening file:")
 				log.Println(err)
 			}
-			fmt.Println(b)
-			fmt.Println(string(b))
 
 			if _, err := f.Write(b); err != nil {
 				log.Println("Write error to file:")
@@ -181,6 +180,7 @@ func (s *Server) handleConn(conn net.Conn) {
 				s.mu.Unlock()
 				return
 			}
+			f.Sync()
 
 			f.Close()
 
